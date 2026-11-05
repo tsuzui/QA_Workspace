@@ -1,0 +1,10 @@
+node_modules/
+.next/
+.qa-workspace/
+*.db
+*.db-journal
+out/
+dist/
+.env
+.env.local
+.env*.local
