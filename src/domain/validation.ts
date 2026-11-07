@@ -14,6 +14,40 @@ export interface EnvironmentInput {
   notes?: string;
 }
 
+export interface ModuleInput {
+  name: string;
+  code: string;
+  orderIndex?: number;
+}
+
+export interface FeatureInput {
+  moduleId: string;
+  name: string;
+  description?: string;
+  orderIndex?: number;
+}
+
+export interface TestStepInput {
+  stepNumber: number;
+  action: string;
+  testData?: string;
+  expectedResult?: string;
+}
+
+export interface TestCaseInput {
+  featureId: string;
+  title: string;
+  description?: string;
+  preconditions?: string;
+  expectedResult: string;
+  priority: "Critical" | "High" | "Medium" | "Low";
+  testType: "Functional" | "Regression" | "Negative" | "Boundary" | "Validation" | "State" | "Permission";
+  status: "Draft" | "Ready" | "Deprecated";
+  automationState: "Manual" | "AI_Executable" | "Automation_Candidate" | "Automated";
+  tags?: string;
+  steps: TestStepInput[];
+}
+
 export interface ValidationResult<T> {
   success: boolean;
   data?: T;
@@ -110,6 +144,150 @@ export function validateEnvironmentInput(input: Partial<EnvironmentInput>): Vali
       isActive,
       isProduction,
       notes,
+    },
+  };
+}
+
+export function validateModuleInput(input: Partial<ModuleInput>): ValidationResult<ModuleInput> {
+  const errors: Record<string, string> = {};
+
+  const name = input.name?.trim() || "";
+  if (!name) {
+    errors.name = "Module name is required.";
+  } else if (name.length < 2 || name.length > 50) {
+    errors.name = "Module name must be between 2 and 50 characters.";
+  }
+
+  const rawCode = input.code?.trim().toUpperCase() || "";
+  if (!rawCode) {
+    errors.code = "Module code is required (e.g. AUTH, CHAT, BILL).";
+  } else if (!/^[A-Z0-9_-]{2,8}$/.test(rawCode)) {
+    errors.code = "Module code must be 2-8 uppercase alphanumeric characters.";
+  }
+
+  const orderIndex = typeof input.orderIndex === "number" ? input.orderIndex : 0;
+
+  if (Object.keys(errors).length > 0) {
+    return { success: false, errors };
+  }
+
+  return {
+    success: true,
+    data: {
+      name,
+      code: rawCode,
+      orderIndex,
+    },
+  };
+}
+
+export function validateFeatureInput(input: Partial<FeatureInput>): ValidationResult<FeatureInput> {
+  const errors: Record<string, string> = {};
+
+  const moduleId = input.moduleId?.trim() || "";
+  if (!moduleId) {
+    errors.moduleId = "Parent module is required.";
+  }
+
+  const name = input.name?.trim() || "";
+  if (!name) {
+    errors.name = "Feature name is required.";
+  } else if (name.length < 2 || name.length > 80) {
+    errors.name = "Feature name must be between 2 and 80 characters.";
+  }
+
+  const description = input.description?.trim() || undefined;
+  const orderIndex = typeof input.orderIndex === "number" ? input.orderIndex : 0;
+
+  if (Object.keys(errors).length > 0) {
+    return { success: false, errors };
+  }
+
+  return {
+    success: true,
+    data: {
+      moduleId,
+      name,
+      description,
+      orderIndex,
+    },
+  };
+}
+
+export function validateTestCaseInput(input: Partial<TestCaseInput>): ValidationResult<TestCaseInput> {
+  const errors: Record<string, string> = {};
+
+  const featureId = input.featureId?.trim() || "";
+  if (!featureId) {
+    errors.featureId = "Feature assignment is required.";
+  }
+
+  const title = input.title?.trim() || "";
+  if (!title) {
+    errors.title = "Test case title is required.";
+  } else if (title.length < 4 || title.length > 150) {
+    errors.title = "Title must be between 4 and 150 characters.";
+  }
+
+  const expectedResult = input.expectedResult?.trim() || "";
+  if (!expectedResult) {
+    errors.expectedResult = "Expected result is required.";
+  }
+
+  const validPriorities = ["Critical", "High", "Medium", "Low"] as const;
+  const priority = input.priority && validPriorities.includes(input.priority) ? input.priority : "Medium";
+
+  const validTestTypes = ["Functional", "Regression", "Negative", "Boundary", "Validation", "State", "Permission"] as const;
+  const testType = input.testType && validTestTypes.includes(input.testType) ? input.testType : "Functional";
+
+  const validStatuses = ["Draft", "Ready", "Deprecated"] as const;
+  const status = input.status && validStatuses.includes(input.status) ? input.status : "Draft";
+
+  const validAutomation = ["Manual", "AI_Executable", "Automation_Candidate", "Automated"] as const;
+  const automationState = input.automationState && validAutomation.includes(input.automationState) ? input.automationState : "Manual";
+
+  const description = input.description?.trim() || undefined;
+  const preconditions = input.preconditions?.trim() || undefined;
+  const tags = input.tags?.trim() || undefined;
+
+  const rawSteps = input.steps || [];
+  const steps: TestStepInput[] = [];
+
+  for (let i = 0; i < rawSteps.length; i++) {
+    const s = rawSteps[i];
+    const action = s.action?.trim();
+    if (action) {
+      steps.push({
+        stepNumber: i + 1,
+        action,
+        testData: s.testData?.trim() || undefined,
+        expectedResult: s.expectedResult?.trim() || undefined,
+      });
+    }
+  }
+
+  if (steps.length === 0) {
+    errors.steps = "At least one test step with an action is required.";
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return { success: false, errors };
+  }
+
+  return {
+    success: true,
+    data: {
+      featureId,
+      title,
+      description,
+      preconditions,
+      expectedResult,
+      priority,
+      testType,
+      status,
+      automationState,
+      tags,
+      steps,
     },
   };
 }

@@ -3,6 +3,7 @@ node_modules/
 .qa-workspace/
 *.db
 *.db-journal
+*.tsbuildinfo
 out/
 dist/
 .env
